@@ -44,6 +44,13 @@ try:
 	import json
 	from pprint import pprint
 	from collections import Counter
+	from datetime import datetime
+	from datetime import timedelta
+	import numpy as np
+	import pandas as pd
+	import bokeh
+	import bokeh.plotting as bkh
+	from bokeh.core.properties import value
 except Exception as e:
 	print >> sys.stderr, 'Error importing modules'
 	print >> sys.stderr, e
@@ -178,29 +185,28 @@ def number_of_messages(chat):
 	print('Total Messages: ' + str(number))
 	print('Total Texts: ' + str(number_A + number_B))
 	
+	dict_A = {}
+	dict_B = {}
+	word_freq_A = []
+	word_freq_B = []
+
 	all_text_A = all_text_A.lower()
 	for char in '-.,\n':
 		all_text_A = all_text_A.replace(char,' ')
+	for word in all_text_A.split(' '):
+		#if (word.isalpha() and len(word) > 4): 			# TODO, this is ugly because it ignores éöäèèà etc.
+		dict_A[word] = dict_A.get(word, 0) + 1
+	for key, value in dict_A.items():
+		word_freq_A.append((value, key))
+	word_freq_A.sort(reverse=True)
+
 	all_text_B = all_text_B.lower()
 	for char in '-.,\n':
 		all_text_B = all_text_B.replace(char,' ')
-#	print(all_text_A)
-#	a = Counter(all_text_A).most_common()
-#	print(a)
-	d_a = {}
-	d_b = {}
-	for word in all_text_A.split(' '):
-		if (word.isalpha() and len(word) > 4): 			# TODO, this is ugly because it ignores éöäèèà etc.
-			d_a[word] = d_a.get(word, 0) + 1
 	for word in all_text_B.split(' '):
-		if (word.isalpha() and len(word) > 4): 			# TODO, this is ugly because it ignores éöäèèà etc.
-			d_b[word] = d_b.get(word, 0) + 1
-	word_freq_A = []
-	word_freq_B = []
-	for key, value in d_a.items():
-		word_freq_A.append((value, key))
-	word_freq_A.sort(reverse=True)
-	for key, value in d_b.items():
+		#if (word.isalpha() and len(word) > 4): 			# TODO, this is ugly because it ignores éöäèèà etc.
+		dict_B[word] = dict_B.get(word, 0) + 1
+	for key, value in dict_B.items():
 		word_freq_B.append((value, key))
 	word_freq_B.sort(reverse=True)
 
@@ -211,6 +217,7 @@ def number_of_messages(chat):
 		max = 50
 	for i in range(max):
 		print(word_freq_A[i])
+
 	print('top words of person B:')
 	i = 0
 	max = len(word_freq_B)
@@ -219,6 +226,80 @@ def number_of_messages(chat):
 	for i in range(max):
 		print(word_freq_B[i])
 
+
+'''
+>>> data.index[1]
+Timestamp('2016-02-15 00:30:00')
+>>> data.index[2]
+Timestamp('2016-02-15 01:00:00')
+>>> type(data.index[3])
+<class 'pandas._libs.tslibs.timestamps.Timestamp'>
+>>>
+'''
+def message_frequency(chat):
+	table_A = []
+	table_B = []
+	days_A = {}
+	days_B = {}
+	months_A = {}
+	months_B = {}
+	months_total = {}
+	person_A = chat['messages'][0]['from']
+	person_B = ''
+	for message in chat['messages']:
+		if(message['type'] == 'message'):
+			date = message['date']
+			date_obj = datetime.strptime(date, '%Y-%m-%dT%H:%M:%S')
+			month_str = str(date_obj.year) + '-' + str(date_obj.month) + '-1'
+			month_obj = datetime.strptime(month_str, '%Y-%m-%d')
+			if person_A in message['from']:
+				days_A[date_obj.date()] = days_A.get(date_obj.date(), 0) + 1
+				months_A[month_obj] = months_A.get(month_obj, 0) + 1
+			else:
+				person_B = message['from']
+				days_B[date_obj.date()] = days_B.get(date_obj.date(), 0) + 1
+				months_B[month_obj] = months_B.get(month_obj, 0) + 1
+
+	series_days_A = pd.Series(days_A)
+	series_days_B = pd.Series(days_B)
+	series_months_A = pd.Series(months_A)
+	series_months_B = pd.Series(months_B)
+	data_frame_days_A = series_days_A.to_frame(name='frequency')
+	data_frame_days_B = series_days_B.to_frame(name='frequency')
+	data_frame_months_A = series_months_A.to_frame(name='frequency')
+	data_frame_months_B = series_months_B.to_frame(name='frequency')
+
+	bkh.output_file("plots.html")
+
+	fig_d_a = bkh.figure(x_axis_type="datetime",
+					title="Number per day of " + person_A,
+					width=600, height=400)
+	fig_d_a.line(data_frame_days_A.index, data_frame_days_A.frequency)
+	fig_d_a.xaxis.axis_label = "Date"
+	fig_d_a.yaxis.axis_label = "Frequency"
+	bkh.show(fig_d_a)
+	fig_d_b = bkh.figure(x_axis_type="datetime",
+					title="Number per day of " + person_B,
+					width=600, height=400)
+	fig_d_b.line(data_frame_days_B.index, data_frame_days_B.frequency)
+	fig_d_b.xaxis.axis_label = "Date"
+	fig_d_b.yaxis.axis_label = "Frequency"
+	bkh.show(fig_d_b)
+
+	colors = ["#f62459", "#f4b350"]
+
+	data = {'index' : data_frame_months_A.index, person_A : data_frame_months_A.frequency, person_B : data_frame_months_B.frequency}
+
+	fig_m_b = bkh.figure(x_axis_type="datetime",
+					title="Messages per Month",
+					width=600, height=400)
+	#fig_m_b.vbar(x=data_frame_months_B.index, width=2000000, top=data_frame_months_B.frequency)
+	fig_m_b.vbar_stack([person_A, person_B], x='index', width=timedelta(days=20), color=colors, source=data, legend=[value(x) for x in [person_A, person_B]])
+	fig_m_b.xaxis.axis_label = "Date"
+	fig_m_b.yaxis.axis_label = "Number of Messages"
+	bkh.show(fig_m_b)
+
+
 # ===== MAIN =====
 def main():
 	if ( opts.indir is None or opts.name is None):
@@ -226,7 +307,8 @@ def main():
 		exit(0)
 	raw_data = load_file_to_raw(opts.indir)
 	chat_data = from_data_select_chat(raw_data, opts.name)
-	number_of_messages(chat_data)
+	# number_of_messages(chat_data)
+	message_frequency(chat_data)
 
 
 # ================
