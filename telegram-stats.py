@@ -51,6 +51,7 @@ try:
 	import bokeh
 	import bokeh.plotting as bkh
 	from bokeh.core.properties import value
+	import codecs
 except Exception as e:
 	print >> sys.stderr, 'Error importing modules'
 	print >> sys.stderr, e
@@ -70,12 +71,25 @@ def debugPrint(listed):
 #			sys.stderr.write(message + '\n\n')
 		i += 1
 
+def dump_to_json_file(filename, data):
+	with open(filename, 'w') as fp:
+		json.dump(data, fp, indent=4)
+
+def dump_to_raw_file(filename, data):
+	with open(filename, 'w') as fp:
+		fp.write(str(data))
+
+def dump_unicode_to_raw_file(filename, data):
+	file = codecs.open(filename, "w", "utf-8")
+	file.write(data.encode('utf-8'))
+	file.close()
 
 def load_file_to_raw(path):
 	try:
-		with open(path) as file:
-			data = json.load(file)
-			return data
+		input_file  = file(path, "r")
+		# read the file and decode possible UTF-8 signature at the beginning
+		data = json.loads(input_file.read().decode("utf-8-sig"))
+		return data
 	except IOError:
 		print('Error: could not open the file')
 		exit(-1)
@@ -189,7 +203,29 @@ def number_of_messages(chat):
 	dict_B = {}
 	word_freq_A = []
 	word_freq_B = []
+	fav_emoji_A = {}
+	fav_emoji_B = {}
+	fav_emoji_A_str = ''
+	fav_emoji_B_str = ''
 
+	number_chars_A = Counter(all_text_A.decode('utf-8'))
+	number_chars_A = sorted(number_chars_A.items(), key=lambda item: item[1], reverse=True)
+	for item in number_chars_A:
+		if(len(item[0].encode('utf-8')) > 3):
+				fav_emoji_A[item[0].encode('utf-8')] = item[1]
+				fav_emoji_A_str += item[0].encode('utf-8') + ' : ' + str(item[1]) + '\n'
+
+	number_chars_B = Counter(all_text_B.decode('utf-8'))
+	number_chars_B = sorted(number_chars_B.items(), key=lambda item: item[1], reverse=True)
+	for item in number_chars_B:
+		if(len(item[0].encode('utf-8')) > 3):
+				fav_emoji_B[item[0].encode('utf-8')] = item[1]
+				fav_emoji_B_str += item[0].encode('utf-8') + ' : ' + str(item[1]) + '\n'
+
+	dump_unicode_to_raw_file('fav_emoji_A.raw', fav_emoji_A_str)
+	dump_unicode_to_raw_file('fav_emoji_B.raw', fav_emoji_B_str)
+
+	# TODO make this a method
 	all_text_A = all_text_A.lower()
 	for char in '-.,\n':
 		all_text_A = all_text_A.replace(char,' ')
@@ -210,6 +246,7 @@ def number_of_messages(chat):
 		word_freq_B.append((value, key))
 	word_freq_B.sort(reverse=True)
 
+	'''
 	print('top words of person A:')
 	i = 0
 	max = len(word_freq_A)
@@ -225,6 +262,7 @@ def number_of_messages(chat):
 		max = 50
 	for i in range(max):
 		print(word_freq_B[i])
+	'''
 
 
 '''
@@ -271,6 +309,7 @@ def message_frequency(chat):
 
 	bkh.output_file("plots.html")
 
+	##### LINE GRAPH for daily data
 	fig_d_a = bkh.figure(x_axis_type="datetime",
 					title="Number per day of " + person_A,
 					width=600, height=400)
@@ -278,6 +317,7 @@ def message_frequency(chat):
 	fig_d_a.xaxis.axis_label = "Date"
 	fig_d_a.yaxis.axis_label = "Frequency"
 	bkh.show(fig_d_a)
+	##### LINE GRAPH for daily data
 	fig_d_b = bkh.figure(x_axis_type="datetime",
 					title="Number per day of " + person_B,
 					width=600, height=400)
@@ -286,18 +326,23 @@ def message_frequency(chat):
 	fig_d_b.yaxis.axis_label = "Frequency"
 	bkh.show(fig_d_b)
 
+	##### STACED BAR GRAPH for monthly data
 	colors = ["#f62459", "#f4b350"]
+	# dict containing all the monthly data
+	# 'index' : [2018-01, 2018-02, 2018-03]
+	# 'name A' : [300, 234, 67]
+	# 'name B' : [290, 210, 89] 
+	data_month_ab = {'index' : data_frame_months_A.index, person_A : data_frame_months_A.frequency, person_B : data_frame_months_B.frequency}
+	dump_to_raw_file('messaes-month.raw', data_month_ab)
 
-	data = {'index' : data_frame_months_A.index, person_A : data_frame_months_A.frequency, person_B : data_frame_months_B.frequency}
-
-	fig_m_b = bkh.figure(x_axis_type="datetime",
+	fig_m_stack = bkh.figure(x_axis_type="datetime",
 					title="Messages per Month",
 					width=600, height=400)
-	#fig_m_b.vbar(x=data_frame_months_B.index, width=2000000, top=data_frame_months_B.frequency)
-	fig_m_b.vbar_stack([person_A, person_B], x='index', width=timedelta(days=20), color=colors, source=data, legend=[value(x) for x in [person_A, person_B]])
-	fig_m_b.xaxis.axis_label = "Date"
-	fig_m_b.yaxis.axis_label = "Number of Messages"
-	bkh.show(fig_m_b)
+	#fig_m_stack.vbar(x=data_frame_months_B.index, width=2000000, top=data_frame_months_B.frequency)
+	fig_m_stack.vbar_stack([person_A, person_B], x='index', width=timedelta(days=20), color=colors, source=data_month_ab, legend=[value(x) for x in [person_A, person_B]])
+	fig_m_stack.xaxis.axis_label = "Date"
+	fig_m_stack.yaxis.axis_label = "Number of Messages"
+	bkh.show(fig_m_stack)
 
 
 # ===== MAIN =====
@@ -307,8 +352,8 @@ def main():
 		exit(0)
 	raw_data = load_file_to_raw(opts.indir)
 	chat_data = from_data_select_chat(raw_data, opts.name)
-	# number_of_messages(chat_data)
-	message_frequency(chat_data)
+	number_of_messages(chat_data)
+	# message_frequency(chat_data)
 
 
 # ================
