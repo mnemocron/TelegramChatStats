@@ -90,7 +90,7 @@ def main():
 	raw_data = load_file_to_raw(opts.indir)
 	chat_data = from_data_select_chat(raw_data, opts.name)
 	print('calculating metrics...')
-	#calculate_metrics(chat_data)
+	calculate_metrics(chat_data)
 	print('generating graphs...')
 	raw = calculate_graphs(chat_data)
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['A']['name'] + '.csv', raw['A']['hourofday'])
