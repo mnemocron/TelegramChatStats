@@ -12,7 +12,9 @@ import codecs
 import csv
 
 
-colors = ['#f62459', '#f4b350']
+# colors = ['#f62459', '#f4b350']
+# https://flatuicolors.com/palette/es
+colors = ['#34ace0','#ffb142']
 
 def _parse_chat(chat):
 	metrics = {}
@@ -42,7 +44,6 @@ def _parse_chat(chat):
 			metrics[person]['hourofday'][date_obj.hour] = metrics[person]['hourofday'].get(date_obj.hour, 0) + 1
 	metrics['A']['day_series'] = pd.Series(metrics['A']['days'])
 	metrics['B']['day_series'] = pd.Series(metrics['B']['days'])
-
 	metrics['A']['series_days'] = pd.Series(metrics['A']['days'])
 	metrics['B']['series_days'] = pd.Series(metrics['B']['days'])
 	metrics['A']['frame_days'] = metrics['A']['series_days'].to_frame(name='frequency')
@@ -57,6 +58,10 @@ def _parse_chat(chat):
 	metrics['B']['series_weekdays'] = pd.Series(metrics['B']['weekdays'])
 	metrics['A']['frame_weekdays'] = metrics['A']['series_weekdays'].to_frame(name='frequency')
 	metrics['B']['frame_weekdays'] = metrics['B']['series_weekdays'].to_frame(name='frequency')
+	metrics['A']['series_hoursofday'] = pd.Series(metrics['A']['hourofday'])
+	metrics['B']['series_hoursofday'] = pd.Series(metrics['B']['hourofday'])
+	metrics['A']['frame_hoursofday'] = metrics['A']['series_hoursofday'].to_frame(name='frequency')
+	metrics['B']['frame_hoursofday'] = metrics['B']['series_hoursofday'].to_frame(name='frequency')
 	return metrics
 
 
@@ -77,6 +82,7 @@ def _message_graphs(chat):
 	# histogram_month_stacked('plot_month.html', data_months, metrics['A']['name'], metrics['B']['name'])
 	histogram_month('plot_month.html', metrics)
 	histogram_weekdays('plot_weekdays.html', metrics)
+	histogram_hourofday('plot_hours.html', metrics)
 	return metrics
 
 
@@ -88,7 +94,7 @@ def histogram_month_stacked(filename, data, namea, nameb):
 	##### STACKED BAR GRAPH for monthly data
 	fig = bkh.figure(x_axis_type='datetime',
 		title='Messages per Month',
-		width=1280, height=720)
+		width=720, height=480)
 	fig.vbar_stack([namea, nameb], x='index', 
 		width=timedelta(days=20), 
 		color=colors, source=data, 
@@ -106,8 +112,8 @@ def histogram_month(filename, metrics):
 	data_months = {'index' : metrics['A']['frame_months'].index, metrics['A']['name'] : metrics['A']['frame_months'].frequency,
 		metrics['B']['name'] : metrics['B']['frame_months'].frequency}
 	fig = bkh.figure(x_axis_type='datetime',
-		title='Message count over week', 
-		width=1280, height=720)
+		title='Monthly message count over time per person', 
+		width=720, height=480)
 	fig.vbar(x='index', 
 		top='frequency', width=timedelta(days=10), 
 		source=metrics['A']['frame_months'], 
@@ -128,7 +134,7 @@ def histogram_days(filename, frame, name, color):
 	bkh.output_file(filename)
 	fig = bkh.figure(x_axis_type='datetime',
 		title='Message count per day of ' + name,
-		width=1280, height=720)
+		width=720, height=480)
 	fig.line(frame.index, frame.frequency, color=color, line_width=3)
 	fig.xaxis.axis_label = 'Date'
 	fig.yaxis.axis_label = 'Frequency'
@@ -142,8 +148,8 @@ def histogram_weekdays(filename, metrics):
 	bkh.output_file(filename)
 	weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 	fig = bkh.figure(x_range=weekdays, 
-		title='Message count over week', 
-		width=1280, height=720)
+		title='Message count distribution over weekdays', 
+		width=720, height=480)
 	fig.vbar(x=dodge('index', 0.35, range=fig.x_range), 
 		top='frequency', width=0.3, source=metrics['A']['frame_weekdays'], 
 		color=colors[0], legend=metrics['A']['name'])
@@ -155,3 +161,20 @@ def histogram_weekdays(filename, metrics):
 	bkh.show(fig)
 	return
 
+def histogram_hourofday(filename, metrics):
+	bkh.reset_output()
+	bkh.output_file(filename)
+	hours = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']
+	fig = bkh.figure(x_range=hours, 
+		title='Message count distribution throughout the day', 
+		width=1280, height=480)
+	fig.vbar(x=dodge('index', 0.35, range=fig.x_range), 
+		top='frequency', width=0.3, source=metrics['A']['frame_hoursofday'], 
+		color=colors[0], legend=metrics['A']['name'])
+	fig.vbar(x=dodge('index', 0.65, range=fig.x_range), 
+		top='frequency', width=0.3, source=metrics['B']['frame_hoursofday'], 
+		color=colors[1], legend=metrics['B']['name'])
+	fig.xaxis.axis_label = 'Time'
+	fig.yaxis.axis_label = 'Message count'
+	bkh.show(fig)
+	return
