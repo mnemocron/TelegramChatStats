@@ -8,7 +8,11 @@ Generate graphs and statistics from your exported Telegram messages.
 
 ## Examples
 
-(tba.)
+![image/months](examples/bokeh_months.png)
+
+![image/hours](examples/bokeh_hourofday.png)
+
+![image/weekday](examples/bokeh_weekdays.png)
 
 ---
 
@@ -71,8 +75,9 @@ The script generates multiple files:
 
 ## Contributing
 
-I would love to hear if you have made some statistics yourself. Feel free to contact me on [reddit](https://www.reddit.com/u/mnemocron)
+I was inspired to do this project by a post on [reddit.com/r/LongDistance](https://www.reddit.com/r/LongDistance/comments/9jud8j/analysis_of_texts_from_a_long_distance/)
 
+I would love to hear if you have made some statistics yourself. Feel free to message me on [reddit](https://www.reddit.com/u/mnemocron)
 
 If you want to implement new metrics feel free to fork and send a pull request.
 Here are some things that I think could be improved or added:
