@@ -7,8 +7,11 @@
 @author 	Simon Burkhardt - github.com/mnemocron
 @date 		2018.10.01
 
-https://www.reddit.com/r/LongDistance/comments/9jud8j/analysis_of_texts_from_a_long_distance/?utm_content=comments&utm_medium=user&utm_source=reddit&utm_name=frontpage
+Post about this code:
+https://www.reddit.com/r/LongDistance/comments/9mgcol/oc_chat_statistics_from_telegram_using_python/
 
+Inspiration:
+https://www.reddit.com/r/LongDistance/comments/9jud8j/analysis_of_texts_from_a_long_distance/
 '''
 
 from __future__ import print_function
@@ -35,14 +38,19 @@ parser.add_option('-i', '--input-file', 	dest='indir', 	type='string', 	help='ch
 parser.add_option('-n', '--name', 			dest='name', 	type='string', 	help='name of the person')
 (opts, args) = parser.parse_args()
 
+# Writes a dict in json format to a file
 def dump_to_json_file(filename, data):
 	with open(filename, 'w', encoding='utf-8') as fh:
 		json.dump(data, fh, indent=4, sort_keys=True)
 
+# writes data utf-8 encoded to a file
+# important for emojis
 def dump_to_unicode_file(filename, data):
 	fh = codecs.open(filename, 'w', 'utf-8')
 	fh.write(data)
 	fh.close()
+
+# writes a dict to a csv format
 
 def dump_dict_to_csv_file(filename, dict):
 	(pd.DataFrame.from_dict(data=dict, orient='index')

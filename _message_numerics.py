@@ -2,6 +2,13 @@
 
 from collections import Counter
 
+
+'''
+@input 	chat (dict)
+@output metrics (dict)
+
+calculates all the numerical metrics
+'''
 def _message_numerics(chat):
 	metrics = {}
 	metrics['A'] = {}
@@ -10,28 +17,28 @@ def _message_numerics(chat):
 	metrics['B']['text'] = u''
 	metrics['A']['media'] = {}
 	metrics['B']['media'] = {}
-	metrics['A']['name'] = chat['messages'][0]['from']
+	metrics['A']['name'] = chat['messages'][0]['from'] # person A is the first message
 	metrics['total'] = len(chat['messages'])
 
 	for message in chat['messages']:
-		if(message['type'] == 'message'):
+		if(message['type'] == 'message'):  # there are other types like calls
 			person = 'B'
 			if metrics['A']['name'] in message['from']:
 				person = 'A'
 			metrics[person]['name'] = message['from']
-			metrics[person]['total_messages'] = metrics[person].get('total_messages', 0) + 1
-			if('media_type' in message):
+			metrics[person]['total_messages'] = metrics[person].get('total_messages', 0) + 1  # count messages
+			if('media_type' in message):  	# automatically count the different media types
 				metrics[person]['media'][message['media_type']] = metrics[person]['media'].get(message['media_type'], 0) + 1
 			if('photo' in message):
 				metrics[person]['photo'] = metrics[person].get('photo', 0) + 1
-			if(type(message['text']) is list):
+			if(type(message['text']) is list):   # multiple elements in one message
 				used_markdown = False
 				for line in message['text']:
 					if('type' in line and type(line) is dict):
 						if(line['type'] == 'link'):
 							metrics[person]['urls'] = metrics[person].get('urls', 0) + 1
 						if(line['type'] == 'pre' or line['type'] == 'italic' or line['type'] == 'bold'):
-							used_markdown = True
+							used_markdown = True  # only count markdown once per message, not per use
 						metrics[person]['markdown'] = metrics[person].get('markdown', 0) + used_markdown
 					elif(type(line) is str):
 						metrics[person]['text'] = (metrics[person].get('text', 0) + ' ' + line)

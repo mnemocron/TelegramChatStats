@@ -11,8 +11,6 @@ from bokeh.transform import dodge
 import codecs
 import csv
 
-
-# colors = ['#f62459', '#f4b350']
 # https://flatuicolors.com/palette/es
 colors = ['#34ace0','#ffb142']
 
@@ -64,7 +62,15 @@ def _parse_chat(chat):
 	metrics['B']['frame_hoursofday'] = metrics['B']['series_hoursofday'].to_frame(name='frequency')
 	return metrics
 
+'''
+@input  months
+@input  delta (int)    the x-offset in days
+@output frame (frame)
 
+This is used to shift monthly data on the time axis by a couple of days.
+Used to display multiple vbars next to each other.
+The bokeh.transforms.dodge method does not support offsets of type (datetime)
+'''
 def hacky_solution_to_fix_timedelta_dodge(months, delta):
 	altered = {}
 	for month in months:
@@ -72,8 +78,7 @@ def hacky_solution_to_fix_timedelta_dodge(months, delta):
 	series = pd.Series(altered)
 	return series.to_frame(name='frequency')
 		
-
-
+# called by the main script
 def _message_graphs(chat):
 	metrics = _parse_chat(chat)
 
@@ -85,8 +90,18 @@ def _message_graphs(chat):
 	histogram_hourofday('plot_hours.html', metrics)
 	return metrics
 
+'''
+@input filename
+@input data
+@input namea
+@input nameb
 
-
+This method is old and currently not used. 
+However it provides a different approach to display the data stacked instead of 
+both person's bars next to each other.
+Though I found this visualization to be more confusing and the data
+between the two persons cannot easily be compared.
+'''
 # https://bokeh.pydata.org/en/latest/docs/user_guide/categorical.html
 def histogram_month_stacked(filename, data, namea, nameb):
 	bkh.reset_output()
@@ -104,8 +119,10 @@ def histogram_month_stacked(filename, data, namea, nameb):
 	bkh.show(fig)
 	return
 
-
-
+'''
+@input filename
+@input metrics (dict)
+'''
 def histogram_month(filename, metrics):
 	bkh.reset_output()
 	bkh.output_file(filename)
@@ -127,8 +144,12 @@ def histogram_month(filename, metrics):
 	bkh.show(fig)
 	return
 
-
-
+'''
+@input filename
+@input frame
+@imput name of the person
+@input color for this person
+'''
 def histogram_days(filename, frame, name, color):
 	bkh.reset_output()
 	bkh.output_file(filename)
@@ -141,8 +162,10 @@ def histogram_days(filename, frame, name, color):
 	bkh.show(fig)
 	return
 
-
-
+'''
+@input filename
+@input metrics (dict)
+'''
 def histogram_weekdays(filename, metrics):
 	bkh.reset_output()
 	bkh.output_file(filename)
@@ -161,6 +184,10 @@ def histogram_weekdays(filename, metrics):
 	bkh.show(fig)
 	return
 
+'''
+@input filename
+@input metrics (dict)
+'''
 def histogram_hourofday(filename, metrics):
 	bkh.reset_output()
 	bkh.output_file(filename)
