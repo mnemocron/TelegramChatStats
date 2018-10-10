@@ -24,6 +24,17 @@ First you need to export your Telegram data to a `result.json` file. You can do 
 ./telegram-statistics.py -i result.json -n "name"
 ```
 
+### Import Whatsapp
+
+There is a `convert-whatsapp.py` to import a whatsapp exported `Whatsapp Chat with Name.txt` into a Telegram style json format.
+To find the correct `[Name Surname]` take the name in the first line in the Whatsapp export txt.
+However, the Whatsapp export is not as detailed as the Telegram export, so many numbers cannot be calculated.
+
+```bash
+./convert-whatsapp.py -i "Whatsapp Chat with Name.txt"
+./telegram-statistics -i whatsapp-result.json -n "Name Surname"
+```
+
 Where `"name"` is the name displayed in Telegram (usually the surname).
 
 ## Generated Files
@@ -83,9 +94,12 @@ If you want to implement new metrics feel free to fork and send a pull request.
 Here are some things that I think could be improved or added:
 
 - normalize weekly / hourly data to "average number" per day/hour instead of "total number"
-- parser to generate a Telegram-style `.json` file from a Whatsapp export
 - number of edited messages
-- script to read the `raw_metrics.json` and pretty-print the results
+
+#### Possible Issues
+
+- csv separator is currently a semicolon `;`
+- other country specific errors (eg. with dates)
 
 ---
 
