@@ -82,8 +82,12 @@ def hacky_solution_to_fix_timedelta_dodge(months, delta):
 def _message_graphs(chat):
 	metrics = _parse_chat(chat)
 
-	histogram_days('plot_days_' + metrics['A']['name'] + '.html', metrics['A']['frame_days'], metrics['A']['name'], colors[0])
-	histogram_days('plot_days_' + metrics['B']['name'] + '.html', metrics['B']['frame_days'], metrics['B']['name'], colors[1])
+	filename = 'plot_days_' + metrics['A']['name'] + '.html'
+	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
+	histogram_days(, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
+	filename = 'plot_days_' + metrics['B']['name'] + '.html'
+	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
+	histogram_days(filename, metrics['B']['frame_days'], metrics['B']['name'], colors[1])
 	# histogram_month_stacked('plot_month.html', data_months, metrics['A']['name'], metrics['B']['name'])
 	histogram_month('plot_month.html', metrics)
 	histogram_weekdays('plot_weekdays.html', metrics)
