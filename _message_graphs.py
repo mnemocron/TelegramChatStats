@@ -84,7 +84,7 @@ def _message_graphs(chat):
 
 	filename = 'plot_days_' + metrics['A']['name'] + '.html'
 	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
-	histogram_days(, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
+	histogram_days(filename, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
 	filename = 'plot_days_' + metrics['B']['name'] + '.html'
 	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
 	histogram_days(filename, metrics['B']['frame_days'], metrics['B']['name'], colors[1])
