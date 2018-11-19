@@ -45,7 +45,8 @@ The script generates multiple files:
 - `plot_days_Person A.html` bokeh plot of person A's daily message frequency
 - `plot_days_Person B.html` bokeh plot of person B's daily message frequency
 - `plot_hours.html` bokeh plot of message frequency over the hours of one day
-- `plot_month.html` bokeh plot of message frequency by month
+- `plot_month.html` bokeh plot of messages sent per month
+- `plot_month_characters.html` bokeh plot of characters sent per month
 - `plot_weekdays.html` bokeh plot of message frequency over one week
 - `raw_metrics.json` raw numerical data (contains all text of both persons / large file)
 - `raw_months_person_Person A.csv` csv vaues of month data

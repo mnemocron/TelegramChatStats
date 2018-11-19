@@ -22,6 +22,8 @@ def _parse_chat(chat):
 	metrics['B']['days'] = {}
 	metrics['A']['months'] = {}
 	metrics['B']['months'] = {}
+	metrics['A']['months_chars'] = {}
+	metrics['B']['months_chars'] = {}
 	metrics['A']['weekdays'] = {}
 	metrics['B']['weekdays'] = {}
 	metrics['A']['hourofday'] = {}
@@ -40,6 +42,14 @@ def _parse_chat(chat):
 			metrics[person]['days'][date_obj.date()] = metrics[person]['days'].get(date_obj.date(), 0) + 1
 			metrics[person]['weekdays'][date_obj.weekday()] = metrics[person]['weekdays'].get(date_obj.weekday(), 0) + 1
 			metrics[person]['hourofday'][date_obj.hour] = metrics[person]['hourofday'].get(date_obj.hour, 0) + 1
+			if(message['type'] == 'message'):
+				if(type(message['text']) is list):   # multiple elements in one message
+					for line in message['text']:
+						if(type(line) is str):
+							metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
+				elif(type(message['text']) is str):
+					metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
+
 	metrics['A']['day_series'] = pd.Series(metrics['A']['days'])
 	metrics['B']['day_series'] = pd.Series(metrics['B']['days'])
 	metrics['A']['series_days'] = pd.Series(metrics['A']['days'])
@@ -52,6 +62,8 @@ def _parse_chat(chat):
 #	metrics['B']['frame_months'] = metrics['B']['series_month'].to_frame(name='frequency')
 	metrics['A']['frame_months'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['months'], -5)
 	metrics['B']['frame_months'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['months'],  5)
+	metrics['A']['frame_months_chars'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['months_chars'], -5)
+	metrics['B']['frame_months_chars'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['months_chars'],  5)
 	metrics['A']['series_weekdays'] = pd.Series(metrics['A']['weekdays'])
 	metrics['B']['series_weekdays'] = pd.Series(metrics['B']['weekdays'])
 	metrics['A']['frame_weekdays'] = metrics['A']['series_weekdays'].to_frame(name='frequency')
@@ -92,6 +104,7 @@ def _message_graphs(chat):
 	histogram_month('plot_month.html', metrics)
 	histogram_weekdays('plot_weekdays.html', metrics)
 	histogram_hourofday('plot_hours.html', metrics)
+	histogram_month_chars('plot_month_characters.html', metrics)
 	return metrics
 
 '''
@@ -120,6 +133,31 @@ def histogram_month_stacked(filename, data, namea, nameb):
 		legend=[value(x) for x in [namea, nameb]])
 	fig.xaxis.axis_label = 'Date'
 	fig.yaxis.axis_label = 'Message count'
+	bkh.show(fig)
+	return
+
+'''
+@input filename
+@input metrics (dict)
+'''
+def histogram_month_chars(filename, metrics):
+	bkh.reset_output()
+	bkh.output_file(filename)
+	data_months = {'index' : metrics['A']['frame_months_chars'].index, metrics['A']['name'] : metrics['A']['frame_months_chars'].frequency,
+		metrics['B']['name'] : metrics['B']['frame_months_chars'].frequency}
+	fig = bkh.figure(x_axis_type='datetime',
+		title='Monthly character count over time per person', 
+		width=720, height=480)
+	fig.vbar(x='index', 
+		top='frequency', width=timedelta(days=10), 
+		source=metrics['A']['frame_months_chars'], 
+		color=colors[0], legend=metrics['A']['name'])
+	fig.vbar(x='index', 
+		top='frequency', width=timedelta(days=10), 
+		source=metrics['B']['frame_months_chars'], 
+		color=colors[1], legend=metrics['B']['name'])
+	fig.xaxis.axis_label = 'Date'
+	fig.yaxis.axis_label = 'Number of characters'
 	bkh.show(fig)
 	return
 
