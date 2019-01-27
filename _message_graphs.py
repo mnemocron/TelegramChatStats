@@ -28,7 +28,15 @@ def _parse_chat(chat):
 	metrics['B']['weekdays'] = {}
 	metrics['A']['hourofday'] = {}
 	metrics['B']['hourofday'] = {}
+	metrics['A']['monthly_n_replied'] = {}
+	metrics['B']['monthly_n_replied'] = {}
+	metrics['A']['monthly_time_to_reply'] = {}
+	metrics['B']['monthly_time_to_reply'] = {}
+	metrics['A']['monthly_avg_reply_time'] = {}
+	metrics['B']['monthly_avg_reply_time'] = {}
 	metrics['A']['name'] = chat['messages'][0]['from']
+	previous_message = {}
+
 	for message in chat['messages']:
 		if(message['type'] == 'message'):
 			person = 'B'
@@ -42,13 +50,21 @@ def _parse_chat(chat):
 			metrics[person]['days'][date_obj.date()] = metrics[person]['days'].get(date_obj.date(), 0) + 1
 			metrics[person]['weekdays'][date_obj.weekday()] = metrics[person]['weekdays'].get(date_obj.weekday(), 0) + 1
 			metrics[person]['hourofday'][date_obj.hour] = metrics[person]['hourofday'].get(date_obj.hour, 0) + 1
-			if(message['type'] == 'message'):
-				if(type(message['text']) is list):   # multiple elements in one message
-					for line in message['text']:
-						if(type(line) is str):
-							metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
-				elif(type(message['text']) is str):
-					metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
+			if(type(message['text']) is list):   # multiple elements in one message
+				for line in message['text']:
+					if(type(line) is str):
+						metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
+			elif(type(message['text']) is str):
+				metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
+			if 'from' in previous_message:
+				if not (previous_message['from'] == message['from']):
+					replytime = (datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S') - datetime.strptime(previous_message['date'], '%Y-%m-%dT%H:%M:%S')).total_seconds()
+					metrics[person]['monthly_n_replied'][month_obj] = metrics[person]['monthly_n_replied'].get(month_obj, 0) + 1
+					metrics[person]['monthly_time_to_reply'][month_obj] = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) + replytime
+					avg_time = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) / metrics[person]['monthly_n_replied'].get(month_obj, 0)
+					metrics[person]['monthly_avg_reply_time'][month_obj] = avg_time
+
+		previous_message = message
 
 	metrics['A']['day_series'] = pd.Series(metrics['A']['days'])
 	metrics['B']['day_series'] = pd.Series(metrics['B']['days'])
@@ -64,6 +80,8 @@ def _parse_chat(chat):
 	metrics['B']['frame_months'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['months'],  5)
 	metrics['A']['frame_months_chars'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['months_chars'], -5)
 	metrics['B']['frame_months_chars'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['months_chars'],  5)
+	metrics['A']['frame_months_reply_time'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['monthly_avg_reply_time'], -5)
+	metrics['B']['frame_months_reply_time'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['monthly_avg_reply_time'],  5)
 	metrics['A']['series_weekdays'] = pd.Series(metrics['A']['weekdays'])
 	metrics['B']['series_weekdays'] = pd.Series(metrics['B']['weekdays'])
 	metrics['A']['frame_weekdays'] = metrics['A']['series_weekdays'].to_frame(name='frequency')
@@ -101,7 +119,8 @@ def _message_graphs(chat):
 	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
 	histogram_days(filename, metrics['B']['frame_days'], metrics['B']['name'], colors[1])
 	# histogram_month_stacked('plot_month.html', data_months, metrics['A']['name'], metrics['B']['name'])
-	histogram_month('plot_month.html', metrics)
+	histogram_month('plot_month.html', metrics, 'frame_months', 'Monthly message count over time per person', 'Message count')
+	histogram_month('plot_month_replytime.html', metrics, 'frame_months_reply_time', 'Average monthly reply delay time over time per person', 'average delay in seconds')
 	histogram_weekdays('plot_weekdays.html', metrics)
 	histogram_hourofday('plot_hours.html', metrics)
 	histogram_month_chars('plot_month_characters.html', metrics)
@@ -165,24 +184,24 @@ def histogram_month_chars(filename, metrics):
 @input filename
 @input metrics (dict)
 '''
-def histogram_month(filename, metrics):
+def histogram_month(filename, metrics, key, title_str, ylabel):
 	bkh.reset_output()
 	bkh.output_file(filename)
-	data_months = {'index' : metrics['A']['frame_months'].index, metrics['A']['name'] : metrics['A']['frame_months'].frequency,
-		metrics['B']['name'] : metrics['B']['frame_months'].frequency}
+	data_months = {'index' : metrics['A'][key].index, metrics['A']['name'] : metrics['A']['frame_months'].frequency,
+		metrics['B']['name'] : metrics['B'][key].frequency}
 	fig = bkh.figure(x_axis_type='datetime',
-		title='Monthly message count over time per person', 
+		title=title_str, 
 		width=720, height=480)
 	fig.vbar(x='index', 
 		top='frequency', width=timedelta(days=10), 
-		source=metrics['A']['frame_months'], 
+		source=metrics['A'][key], 
 		color=colors[0], legend=metrics['A']['name'])
 	fig.vbar(x='index', 
 		top='frequency', width=timedelta(days=10), 
-		source=metrics['B']['frame_months'], 
+		source=metrics['B'][key], 
 		color=colors[1], legend=metrics['B']['name'])
 	fig.xaxis.axis_label = 'Date'
-	fig.yaxis.axis_label = 'Message count'
+	fig.yaxis.axis_label = ylabel
 	bkh.show(fig)
 	return
 
