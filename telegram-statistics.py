@@ -36,6 +36,7 @@ from _message_graphs import _message_graphs
 parser = optparse.OptionParser('telegram-stats')
 parser.add_option('-i', '--input-file', 	dest='indir', 	type='string', 	help='chat history file')
 parser.add_option('-n', '--name', 			dest='name', 	type='string', 	help='name of the person')
+parser.add_option('-c', '--id', 			dest='id', 		type='string', 	help='chat id of the person')
 parser.add_option('-d', '--date-max', 		dest='date', 	type='string', 	help='only count messages after date [YYYY-MM-DD]')
 (opts, args) = parser.parse_args()
 
@@ -66,12 +67,37 @@ def load_file_to_raw(path):
 		print('Error: could not open the file')
 		exit(-1)
 
-def from_data_select_chat(data, name):
+def select_chat_from_name(data, name):
 	try:
+		found = False
 		for chat in data['chats']['list']:
 			if('name' in chat):
 				if(name == chat['name']):
+					if(found == True):
+						print('Error: The name "' + str(name) + '" is ambiguous. Use the chat ID instead.')
+						print('Use <telegram-stats -i [result.json]> to list the available chats.')
+						exit(-1)
+					found = True
 					data = chat
+		if(found == False):
+			print('Error: invalid chat name: ' + name)
+			exit(-1)
+		return data
+	except KeyError:
+		print('Error: wrong file format (name not found)')
+
+def select_chat_from_id(data, id):
+	id = str(id)
+	try:
+		found = False
+		for chat in data['chats']['list']:
+			if('id' in chat):
+				if(id == str(chat['id'])):
+					found = True
+					data = chat
+		if(found == False):
+			print('Error: invalid chat ID: ' + str(id))
+			exit(-1)
 		return data
 	except KeyError:
 		print('Error: wrong file format (keys not found)')
@@ -91,25 +117,50 @@ def calculate_graphs(chat_data, date_filter):
 	return _message_graphs(chat_data, date_filter)
 
 # https://stackoverflow.com/questions/16870663/how-do-i-validate-a-date-string-format-in-python
-def validate(date_text):
+def validate_date(date_text):
 	try:
 		datetime.strptime(date_text, '%Y-%m-%d')
 	except ValueError:
 		print('Incorrect date format, should be YYYY-MM-DD')
 		exit(-1)
 
+def print_available_names(raw_data):
+	print('')
+	print('available chat names:')
+	for chat in raw_data['chats']['list']:
+		if ('name' in chat):
+			name = chat['name']
+			if(len(name) > 13):
+				name = name[:11] + '...'
+			if(len(name) < 7):
+				name = name + '\t'
+			print(name + ' \t' + str(chat['id']) + ' \t(' + chat['type'] + ')')
+
 ### MAIN
 def main():
-	if ( opts.indir is None or opts.name is None):
+	if (opts.indir is None):
 		parser.print_help() 
 		exit(0)
+
 	date_filter = '1970-01-01'
 	if ( opts.date is not None):
-		validate(opts.date)
+		validate_date(opts.date)
 		date_filter = opts.date
+
 	print('importing raw data...')
 	raw_data = load_file_to_raw(opts.indir)
-	chat_data = from_data_select_chat(raw_data, opts.name)
+
+	if (opts.id is None and opts.name is None):
+		parser.print_help() 
+		print_available_names(raw_data)
+		exit(0)
+	
+	if (opts.id is not None):
+		chat_data = select_chat_from_id(raw_data, opts.id)
+	elif (opts.name is not None):
+		chat_data = select_chat_from_name(raw_data, opts.name)
+		
+	
 	print('calculating metrics...')
 	calculate_metrics(chat_data, date_filter)
 	print('generating graphs...')
@@ -118,6 +169,16 @@ def main():
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['B']['name'] + '.csv', raw['B']['hourofday'])
 	dump_dict_to_csv_file('raw_months_person_' + raw['A']['name'] + '.csv', raw['A']['months'])
 	dump_dict_to_csv_file('raw_months_person_' + raw['B']['name'] + '.csv', raw['B']['months'])
+	dump_dict_to_csv_file('raw_months_chars_person_' + raw['A']['name'] + '.csv', raw['A']['months_chars'])
+	dump_dict_to_csv_file('raw_months_chars_person_' + raw['B']['name'] + '.csv', raw['B']['months_chars'])
+	dump_dict_to_csv_file('raw_monthly_pictures_person_' + raw['A']['name'] + '.csv', raw['A']['monthly_pictures'])
+	dump_dict_to_csv_file('raw_monthly_pictures_person_' + raw['B']['name'] + '.csv', raw['B']['monthly_pictures'])
+	dump_dict_to_csv_file('raw_monthly_calls_person_' + raw['A']['name'] + '.csv', raw['A']['monthly_calls'])
+	dump_dict_to_csv_file('raw_monthly_calls_person_' + raw['B']['name'] + '.csv', raw['B']['monthly_calls'])
+	dump_dict_to_csv_file('raw_monthly_call_duration_person_' + raw['A']['name'] + '.csv', raw['A']['monthly_call_duration'])
+	dump_dict_to_csv_file('raw_monthly_call_duration_person_' + raw['B']['name'] + '.csv', raw['B']['monthly_call_duration'])
+	dump_dict_to_csv_file('raw_monthly_time_to_reply_person_' + raw['A']['name'] + '.csv', raw['A']['monthly_time_to_reply'])
+	dump_dict_to_csv_file('raw_monthly_time_to_reply_person_' + raw['B']['name'] + '.csv', raw['B']['monthly_time_to_reply'])
 	print('done')
 
 if __name__ == '__main__':

@@ -13,6 +13,7 @@ import csv
 
 # https://flatuicolors.com/palette/es
 colors = ['#34ace0','#ffb142']
+colors = ['#686de0', '#ffbe76']
 
 def _parse_chat(chat, date_filter):
 	metrics = {}
@@ -146,12 +147,15 @@ def hacky_solution_to_fix_timedelta_dodge(months, delta):
 # called by the main script
 def _message_graphs(chat, date_filter):
 	metrics = _parse_chat(chat, date_filter)
-	filename = 'plot_days_' + metrics['A']['name'] + '.html'
-	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
-	histogram_days(filename, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
-	filename = 'plot_days_' + metrics['B']['name'] + '.html'
-	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
-	histogram_days(filename, metrics['B']['frame_days'], metrics['B']['name'], colors[1])
+
+	# commented out because this graph is visually unpleasing and not very 
+
+	# filename = 'plot_days_' + metrics['A']['name'] + '.html'
+	# filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
+	# histogram_days(filename, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
+	# filename = 'plot_days_' + metrics['B']['name'] + '.html'
+	# filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
+	# histogram_days(filename, metrics['B']['frame_days'], metrics['B']['name'], colors[1])
 	# histogram_month_stacked('plot_month.html', data_months, metrics['A']['name'], metrics['B']['name'])
 	histogram_month('plot_month.html', metrics, 'frame_months', 'Monthly message count over time per person', 'Message count')
 	histogram_month('plot_month_replytime.html', metrics, 'frame_months_reply_time', 'Average monthly reply delay time over time per person', 'average delay in seconds')
@@ -172,7 +176,7 @@ def _message_graphs(chat, date_filter):
 @input namea
 @input nameb
 
-This method is old and currently not used. 
+This method is currently not used. 
 However it provides a different approach to display the data stacked instead of 
 both person's bars next to each other.
 Though I found this visualization to be more confusing and the data
@@ -181,7 +185,7 @@ between the two persons cannot easily be compared.
 # https://bokeh.pydata.org/en/latest/docs/user_guide/categorical.html
 def histogram_month_stacked(filename, data, namea, nameb):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	##### STACKED BAR GRAPH for monthly data
 	fig = bkh.figure(x_axis_type='datetime',
 		title='Messages per Month',
@@ -201,7 +205,7 @@ def histogram_month_stacked(filename, data, namea, nameb):
 '''
 def histogram_month_chars(filename, metrics):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	data_months = {'index' : metrics['A']['frame_months_chars'].index, metrics['A']['name'] : metrics['A']['frame_months_chars'].frequency,
 		metrics['B']['name'] : metrics['B']['frame_months_chars'].frequency}
 	fig = bkh.figure(x_axis_type='datetime',
@@ -223,10 +227,13 @@ def histogram_month_chars(filename, metrics):
 '''
 @input filename
 @input metrics (dict)
+@input key
+@input title_str
+@input ylabel
 '''
 def histogram_month(filename, metrics, key, title_str, ylabel):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	data_months = {'index' : metrics['A'][key].index, metrics['A']['name'] : metrics['A']['frame_months'].frequency,
 		metrics['B']['name'] : metrics['B'][key].frequency}
 	fig = bkh.figure(x_axis_type='datetime',
@@ -253,7 +260,7 @@ def histogram_month(filename, metrics, key, title_str, ylabel):
 '''
 def histogram_days(filename, frame, name, color):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	fig = bkh.figure(x_axis_type='datetime',
 		title='Message count per day of ' + name,
 		width=720, height=480)
@@ -269,7 +276,7 @@ def histogram_days(filename, frame, name, color):
 '''
 def histogram_weekdays(filename, metrics):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 	fig = bkh.figure(x_range=weekdays, 
 		title='Message distribution over weekdays', 
@@ -288,10 +295,13 @@ def histogram_weekdays(filename, metrics):
 '''
 @input filename
 @input metrics (dict)
+@input key
+@input title_str
+@input ylabel
 '''
 def histogram_hourofday(filename, metrics, key, title_str, ylabel):
 	bkh.reset_output()
-	bkh.output_file(filename)
+	bkh.output_file(filename, title=filename)
 	hours = ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']
 	fig = bkh.figure(x_range=hours, 
 		title=title_str, 

@@ -39,20 +39,32 @@ Where `"name"` is the name displayed in Telegram (usually the surname).
 
 ## Generated Files
 
-The script generates multiple files:
+The script generates multiple files.
 
-- `emojis.txt` contains unicode encoded emojis and count
-- `plot_days_Person A.html` bokeh plot of person A's daily message frequency
-- `plot_days_Person B.html` bokeh plot of person B's daily message frequency
+- `emojis.txt` contains unicode encoded emojis and their count
+- `raw_metrics.json` raw numerical data (contains all text of both persons / large file)
+
+HTML Files (Plots):
+
 - `plot_hours.html` bokeh plot of message frequency over the hours of one day
-- `plot_month.html` bokeh plot of messages sent per month
+- `plot_month.html` bokeh plot of number of messages sent per month
 - `plot_month_characters.html` bokeh plot of characters sent per month
 - `plot_weekdays.html` bokeh plot of message frequency over one week
-- `raw_metrics.json` raw numerical data (contains all text of both persons / large file)
+- `plot_month_calls.html` bokeh plot of number of calls per month 
+- `plot_month_call_time.html` bokeh plot of total seconds on call per month
+- `plot_month_photos.html` bokeh plot of number of photos sent per month 
+- `plot_month_replytime.html` bokeh plot of average monthly replytime (Beta)
+
+Raw Files (one for each person):
+
 - `raw_months_person_Person A.csv` csv vaues of month data
-- `raw_months_person_Person B.csv` csv vaues of month data
 - `raw_weekdays_person_Person A.csv` csv vaues of weekday data
-- `raw_weekdays_person_Person B.csv` csv vaues of weekday data
+- `raw_months_chars_person_Person A.csv` csv vaues of monthly character count data
+- `raw_monthly_pictures_person_Person A.csv` csv vaues of monthly picture count data
+- `raw_monthly_calls_person_Person A.csv` csv vaues of monthly number of calls
+- `raw_monthly_call_duration_person_Person A.csv` csv values of monthly call duration
+- `raw_monthly_time_to_reply_person_Person A.csv` csv vaues of monthly reply time
+
 
 ## Metrics
 
