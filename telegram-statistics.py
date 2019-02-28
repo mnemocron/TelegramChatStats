@@ -36,6 +36,7 @@ from _message_graphs import _message_graphs
 parser = optparse.OptionParser('telegram-stats')
 parser.add_option('-i', '--input-file', 	dest='indir', 	type='string', 	help='chat history file')
 parser.add_option('-n', '--name', 			dest='name', 	type='string', 	help='name of the person')
+parser.add_option('-d', '--date-max', 		dest='date', 	type='string', 	help='only count messages after date [YYYY-MM-DD]')
 (opts, args) = parser.parse_args()
 
 # Writes a dict in json format to a file
@@ -75,8 +76,8 @@ def from_data_select_chat(data, name):
 	except KeyError:
 		print('Error: wrong file format (keys not found)')
 
-def calculate_metrics(chat_data):
-	metrics = _message_numerics(chat_data)
+def calculate_metrics(chat_data, date_filter):
+	metrics = _message_numerics(chat_data, date_filter)
 	dump_to_json_file('raw_metrics.json', metrics)
 	ustr = u'' + metrics['A']['name'] + '\n'
 	for e in metrics['A']['emojilist']:
@@ -86,21 +87,33 @@ def calculate_metrics(chat_data):
 		ustr += str(e[0]) + u' : ' + str(e[1]) + u'\n'
 	dump_to_unicode_file('emojis.txt', ustr)
 
-def calculate_graphs(chat_data):
-	return _message_graphs(chat_data)
+def calculate_graphs(chat_data, date_filter):
+	return _message_graphs(chat_data, date_filter)
+
+# https://stackoverflow.com/questions/16870663/how-do-i-validate-a-date-string-format-in-python
+def validate(date_text):
+	try:
+		datetime.strptime(date_text, '%Y-%m-%d')
+	except ValueError:
+		print('Incorrect date format, should be YYYY-MM-DD')
+		exit(-1)
 
 ### MAIN
 def main():
 	if ( opts.indir is None or opts.name is None):
 		parser.print_help() 
 		exit(0)
+	date_filter = '1970-01-01'
+	if ( opts.date is not None):
+		validate(opts.date)
+		date_filter = opts.date
 	print('importing raw data...')
 	raw_data = load_file_to_raw(opts.indir)
 	chat_data = from_data_select_chat(raw_data, opts.name)
 	print('calculating metrics...')
-	calculate_metrics(chat_data)
+	calculate_metrics(chat_data, date_filter)
 	print('generating graphs...')
-	raw = calculate_graphs(chat_data)
+	raw = calculate_graphs(chat_data, date_filter)
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['A']['name'] + '.csv', raw['A']['hourofday'])
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['B']['name'] + '.csv', raw['B']['hourofday'])
 	dump_dict_to_csv_file('raw_months_person_' + raw['A']['name'] + '.csv', raw['A']['months'])

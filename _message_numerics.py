@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
 from collections import Counter
+from datetime import datetime
 
 
 '''
@@ -9,7 +10,7 @@ from collections import Counter
 
 calculates all the numerical metrics
 '''
-def _message_numerics(chat):
+def _message_numerics(chat, date_filter):
 	metrics = {}
 	metrics['A'] = {}
 	metrics['B'] = {}
@@ -19,31 +20,34 @@ def _message_numerics(chat):
 	metrics['B']['media'] = {}
 	metrics['A']['name'] = chat['messages'][0]['from'] # person A is the first message
 	metrics['total'] = len(chat['messages'])
+	oldest_date = datetime.strptime(date_filter, '%Y-%m-%d')
 
 	for message in chat['messages']:
 		if(message['type'] == 'message'):  # there are other types like calls
 			person = 'B'
 			if metrics['A']['name'] in message['from']:
 				person = 'A'
-			metrics[person]['name'] = message['from']
-			metrics[person]['total_messages'] = metrics[person].get('total_messages', 0) + 1  # count messages
-			if('media_type' in message):  	# automatically count the different media types
-				metrics[person]['media'][message['media_type']] = metrics[person]['media'].get(message['media_type'], 0) + 1
-			if('photo' in message):
-				metrics[person]['photo'] = metrics[person].get('photo', 0) + 1
-			if(type(message['text']) is list):   # multiple elements in one message
-				used_markdown = False
-				for line in message['text']:
-					if('type' in line and type(line) is dict):
-						if(line['type'] == 'link'):
-							metrics[person]['urls'] = metrics[person].get('urls', 0) + 1
-						if(line['type'] == 'pre' or line['type'] == 'italic' or line['type'] == 'bold'):
-							used_markdown = True  # only count markdown once per message, not per use
-						metrics[person]['markdown'] = metrics[person].get('markdown', 0) + used_markdown
-					elif(type(line) is str):
-						metrics[person]['text'] = (metrics[person].get('text', 0) + ' ' + line)
-			else:
-				metrics[person]['text'] = (metrics[person].get('text', 0) + ' ' + message['text'])
+			date_obj = datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S')
+			if(date_obj >= oldest_date):
+				metrics[person]['name'] = message['from']
+				metrics[person]['total_messages'] = metrics[person].get('total_messages', 0) + 1  # count messages
+				if('media_type' in message):  	# automatically count the different media types
+					metrics[person]['media'][message['media_type']] = metrics[person]['media'].get(message['media_type'], 0) + 1
+				if('photo' in message):
+					metrics[person]['photo'] = metrics[person].get('photo', 0) + 1
+				if(type(message['text']) is list):   # multiple elements in one message
+					used_markdown = False
+					for line in message['text']:
+						if('type' in line and type(line) is dict):
+							if(line['type'] == 'link'):
+								metrics[person]['urls'] = metrics[person].get('urls', 0) + 1
+							if(line['type'] == 'pre' or line['type'] == 'italic' or line['type'] == 'bold'):
+								used_markdown = True  # only count markdown once per message, not per use
+							metrics[person]['markdown'] = metrics[person].get('markdown', 0) + used_markdown
+						elif(type(line) is str):
+							metrics[person]['text'] = (metrics[person].get('text', 0) + ' ' + line)
+				else:
+					metrics[person]['text'] = (metrics[person].get('text', 0) + ' ' + message['text'])
 
 	metrics['A']['total_chars'] = len(metrics['A']['text'])
 	metrics['B']['total_chars'] = len(metrics['B']['text'])

@@ -14,7 +14,7 @@ import csv
 # https://flatuicolors.com/palette/es
 colors = ['#34ace0','#ffb142']
 
-def _parse_chat(chat):
+def _parse_chat(chat, date_filter):
 	metrics = {}
 	metrics['A'] = {}
 	metrics['B'] = {}
@@ -44,6 +44,7 @@ def _parse_chat(chat):
 	metrics['A']['call_hourofday'] = {}
 	metrics['B']['call_hourofday'] = {}
 	previous_message = {}
+	oldest_date = datetime.strptime(date_filter, '%Y-%m-%d')
 
 	for message in chat['messages']:
 		person = 'B'
@@ -54,36 +55,37 @@ def _parse_chat(chat):
 			if metrics['A']['name'] in message['actor']:
 				person = 'A'
 		date_obj = datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S')
-		month_str = str(date_obj.year) + '-' + str(date_obj.month) + '-1'
-		month_obj = datetime.strptime(month_str, '%Y-%m-%d')
-		if(message['type'] == 'message'):
-			metrics[person]['name'] = message['from']
-			metrics[person]['months'][month_obj] = metrics[person]['months'].get(month_obj, 0) + 1
-			metrics[person]['days'][date_obj.date()] = metrics[person]['days'].get(date_obj.date(), 0) + 1
-			metrics[person]['weekdays'][date_obj.weekday()] = metrics[person]['weekdays'].get(date_obj.weekday(), 0) + 1
-			metrics[person]['hourofday'][date_obj.hour] = metrics[person]['hourofday'].get(date_obj.hour, 0) + 1
-			if(type(message['text']) is list):   # multiple elements in one message
-				for line in message['text']:
-					if(type(line) is str):
-						metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
-			elif(type(message['text']) is str):
-				metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
-			if 'from' in previous_message:
-				if not (previous_message['from'] == message['from']):
-					replytime = (datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S') - datetime.strptime(previous_message['date'], '%Y-%m-%dT%H:%M:%S')).total_seconds()
-					metrics[person]['monthly_n_replied'][month_obj] = metrics[person]['monthly_n_replied'].get(month_obj, 0) + 1
-					metrics[person]['monthly_time_to_reply'][month_obj] = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) + replytime
-					avg_time = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) / metrics[person]['monthly_n_replied'].get(month_obj, 0)
-					metrics[person]['monthly_avg_reply_time'][month_obj] = avg_time
-			if('photo' in message):
-				metrics[person]['monthly_pictures'][month_obj] = metrics[person]['monthly_pictures'].get(month_obj, 0) + 1
-		elif(message['type'] == 'service'):
-			if(message['action'] == 'phone_call'):
-				if('duration_seconds' in message):		# only count if the call was answered
-					metrics['A']['monthly_call_duration'][month_obj] = metrics['A']['monthly_call_duration'].get(month_obj, 0) + int(message['duration_seconds'])
-					metrics['A']['monthly_calls'][month_obj] = metrics['A']['monthly_calls'].get(month_obj, 0) + 1
-					metrics['A']['call_hourofday'][date_obj.hour] = metrics['A']['call_hourofday'].get(date_obj.hour, 0) + 1
-		previous_message = message
+		if(date_obj >= oldest_date):
+			month_str = str(date_obj.year) + '-' + str(date_obj.month) + '-1'
+			month_obj = datetime.strptime(month_str, '%Y-%m-%d')
+			if(message['type'] == 'message'):
+				metrics[person]['name'] = message['from']
+				metrics[person]['months'][month_obj] = metrics[person]['months'].get(month_obj, 0) + 1
+				metrics[person]['days'][date_obj.date()] = metrics[person]['days'].get(date_obj.date(), 0) + 1
+				metrics[person]['weekdays'][date_obj.weekday()] = metrics[person]['weekdays'].get(date_obj.weekday(), 0) + 1
+				metrics[person]['hourofday'][date_obj.hour] = metrics[person]['hourofday'].get(date_obj.hour, 0) + 1
+				if(type(message['text']) is list):   # multiple elements in one message
+					for line in message['text']:
+						if(type(line) is str):
+							metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
+				elif(type(message['text']) is str):
+					metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
+				if 'from' in previous_message:
+					if not (previous_message['from'] == message['from']):
+						replytime = (datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S') - datetime.strptime(previous_message['date'], '%Y-%m-%dT%H:%M:%S')).total_seconds()
+						metrics[person]['monthly_n_replied'][month_obj] = metrics[person]['monthly_n_replied'].get(month_obj, 0) + 1
+						metrics[person]['monthly_time_to_reply'][month_obj] = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) + replytime
+						avg_time = metrics[person]['monthly_time_to_reply'].get(month_obj, 0) / metrics[person]['monthly_n_replied'].get(month_obj, 0)
+						metrics[person]['monthly_avg_reply_time'][month_obj] = avg_time
+				if('photo' in message):
+					metrics[person]['monthly_pictures'][month_obj] = metrics[person]['monthly_pictures'].get(month_obj, 0) + 1
+			elif(message['type'] == 'service'):
+				if(message['action'] == 'phone_call'):
+					if('duration_seconds' in message):		# only count if the call was answered
+						metrics['A']['monthly_call_duration'][month_obj] = metrics['A']['monthly_call_duration'].get(month_obj, 0) + int(message['duration_seconds'])
+						metrics['A']['monthly_calls'][month_obj] = metrics['A']['monthly_calls'].get(month_obj, 0) + 1
+						metrics['A']['call_hourofday'][date_obj.hour] = metrics['A']['call_hourofday'].get(date_obj.hour, 0) + 1
+			previous_message = message
 
 	metrics['B']['monthly_call_duration'] = metrics['A']['monthly_call_duration']
 	metrics['B']['monthly_calls'] = 		metrics['A']['monthly_calls']
@@ -142,8 +144,8 @@ def hacky_solution_to_fix_timedelta_dodge(months, delta):
 	return series.to_frame(name='frequency')
 		
 # called by the main script
-def _message_graphs(chat):
-	metrics = _parse_chat(chat)
+def _message_graphs(chat, date_filter):
+	metrics = _parse_chat(chat, date_filter)
 	filename = 'plot_days_' + metrics['A']['name'] + '.html'
 	filename = ''.join([x for x in filename if ord(x) < 128]) # strip non-ascii characters
 	histogram_days(filename, metrics['A']['frame_days'], metrics['A']['name'], colors[0])
