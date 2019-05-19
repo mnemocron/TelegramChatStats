@@ -38,6 +38,7 @@ parser.add_option('-i', '--input-file', 	dest='indir', 	type='string', 	help='ch
 parser.add_option('-n', '--name', 			dest='name', 	type='string', 	help='name of the person')
 parser.add_option('-c', '--id', 			dest='id', 		type='string', 	help='chat id of the person')
 parser.add_option('-d', '--date-max', 		dest='date', 	type='string', 	help='only count messages after date [YYYY-MM-DD]')
+parser.add_option('-w', '--word-list', 		dest='words', 	type='string', 	help='count occurrences of words -w "John;Vacation"')
 (opts, args) = parser.parse_args()
 
 # Writes a dict in json format to a file
@@ -113,8 +114,8 @@ def calculate_metrics(chat_data, date_filter):
 		ustr += str(e[0]) + u' : ' + str(e[1]) + u'\n'
 	dump_to_unicode_file('emojis.txt', ustr)
 
-def calculate_graphs(chat_data, date_filter):
-	return _message_graphs(chat_data, date_filter)
+def calculate_graphs(chat_data, date_filter, wordlist):
+	return _message_graphs(chat_data, date_filter, wordlist)
 
 # https://stackoverflow.com/questions/16870663/how-do-i-validate-a-date-string-format-in-python
 def validate_date(date_text):
@@ -159,12 +160,14 @@ def main():
 		chat_data = select_chat_from_id(raw_data, opts.id)
 	elif (opts.name is not None):
 		chat_data = select_chat_from_name(raw_data, opts.name)
-		
+
+	if(opts.words is not None):
+		wordlist = opts.words.lower().split(';')
 	
 	print('calculating metrics...')
 	calculate_metrics(chat_data, date_filter)
 	print('generating graphs...')
-	raw = calculate_graphs(chat_data, date_filter)
+	raw = calculate_graphs(chat_data, date_filter, wordlist)
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['A']['name'] + '.csv', raw['A']['hourofday'])
 	dump_dict_to_csv_file('raw_weekdays_person_' + raw['B']['name'] + '.csv', raw['B']['hourofday'])
 	dump_dict_to_csv_file('raw_months_person_' + raw['A']['name'] + '.csv', raw['A']['months'])

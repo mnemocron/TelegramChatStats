@@ -15,7 +15,13 @@ import csv
 colors = ['#34ace0','#ffb142']
 colors = ['#686de0', '#ffbe76']
 
-def _parse_chat(chat, date_filter):
+def count_occurrences(message, wordlist):
+	count = 0
+	for substring in wordlist:
+		count += message.lower().count(substring)
+	return count
+
+def _parse_chat(chat, date_filter, wordlist):
 	metrics = {}
 	metrics['A'] = {}
 	metrics['B'] = {}
@@ -39,6 +45,8 @@ def _parse_chat(chat, date_filter):
 	metrics['B']['monthly_pictures'] = {}
 	metrics['A']['monthly_calls'] = {}
 	metrics['B']['monthly_calls'] = {}
+	metrics['A']['monthly_word_occurrence'] = {}
+	metrics['B']['monthly_word_occurrence'] = {}
 	metrics['A']['monthly_call_duration'] = {}
 	metrics['B']['monthly_call_duration'] = {}
 	metrics['A']['name'] = chat['messages'][0]['from']
@@ -56,9 +64,11 @@ def _parse_chat(chat, date_filter):
 			if metrics['A']['name'] in message['actor']:
 				person = 'A'
 		date_obj = datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S')
+		# check if message needs to be reviewed based on date
 		if(date_obj >= oldest_date):
 			month_str = str(date_obj.year) + '-' + str(date_obj.month) + '-1'
 			month_obj = datetime.strptime(month_str, '%Y-%m-%d')
+			# text and media
 			if(message['type'] == 'message'):
 				metrics[person]['name'] = message['from']
 				metrics[person]['months'][month_obj] = metrics[person]['months'].get(month_obj, 0) + 1
@@ -68,9 +78,15 @@ def _parse_chat(chat, date_filter):
 				if(type(message['text']) is list):   # multiple elements in one message
 					for line in message['text']:
 						if(type(line) is str):
+							# count characters
 							metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(line)
+							# check if words occurr in message
+							metrics[person]['monthly_word_occurrence'][month_obj] = metrics[person]['monthly_word_occurrence'].get(month_obj, 0) + count_occurrences(line, wordlist)
 				elif(type(message['text']) is str):
-					metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])	
+					# count characters
+					metrics[person]['months_chars'][month_obj] = metrics[person]['months_chars'].get(month_obj, 0) + len(message['text'])
+					# check if words occurr in message
+					metrics[person]['monthly_word_occurrence'][month_obj] = metrics[person]['monthly_word_occurrence'].get(month_obj, 0) + count_occurrences(message['text'], wordlist)
 				if 'from' in previous_message:
 					if not (previous_message['from'] == message['from']):
 						replytime = (datetime.strptime(message['date'], '%Y-%m-%dT%H:%M:%S') - datetime.strptime(previous_message['date'], '%Y-%m-%dT%H:%M:%S')).total_seconds()
@@ -80,6 +96,7 @@ def _parse_chat(chat, date_filter):
 						metrics[person]['monthly_avg_reply_time'][month_obj] = avg_time
 				if('photo' in message):
 					metrics[person]['monthly_pictures'][month_obj] = metrics[person]['monthly_pictures'].get(month_obj, 0) + 1
+			# calls
 			elif(message['type'] == 'service'):
 				if(message['action'] == 'phone_call'):
 					if('duration_seconds' in message):		# only count if the call was answered
@@ -114,6 +131,8 @@ def _parse_chat(chat, date_filter):
 	metrics['B']['frame_months_calls'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['monthly_calls'],  5)
 	metrics['A']['frame_months_call_duration'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['monthly_call_duration'], -5)
 	metrics['B']['frame_months_call_duration'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['monthly_call_duration'],  5)
+	metrics['A']['frame_months_word_occurrence'] = hacky_solution_to_fix_timedelta_dodge(metrics['A']['monthly_word_occurrence'], -5)
+	metrics['B']['frame_months_word_occurrence'] = hacky_solution_to_fix_timedelta_dodge(metrics['B']['monthly_word_occurrence'],  5)
 	metrics['A']['series_weekdays'] = pd.Series(metrics['A']['weekdays'])
 	metrics['B']['series_weekdays'] = pd.Series(metrics['B']['weekdays'])
 	metrics['A']['frame_weekdays'] = metrics['A']['series_weekdays'].to_frame(name='frequency')
@@ -145,8 +164,8 @@ def hacky_solution_to_fix_timedelta_dodge(months, delta):
 	return series.to_frame(name='frequency')
 		
 # called by the main script
-def _message_graphs(chat, date_filter):
-	metrics = _parse_chat(chat, date_filter)
+def _message_graphs(chat, date_filter, wordlist):
+	metrics = _parse_chat(chat, date_filter, wordlist)
 
 	# commented out because this graph is visually unpleasing and not very 
 
@@ -162,6 +181,7 @@ def _message_graphs(chat, date_filter):
 	histogram_month('plot_month_calls.html', metrics, 'frame_months_calls', 'Number of calls per month (both persons)', 'Amount')
 	histogram_month('plot_month_call_time.html', metrics, 'frame_months_call_duration', 'Total time on call per month (both persons)', 'total time in seconds')
 	histogram_month('plot_month_photos.html', metrics, 'frame_months_pictures', 'Monthly photo count over time per person', 'number of photos sent')
+	histogram_month('plot_month_word_occurrence.html', metrics, 'frame_months_word_occurrence', 'Occurrences of the strings: [' + ';\n'.join(wordlist) + ']', 'number of occurrences')
 	histogram_weekdays('plot_weekdays.html', metrics)
 	
 	histogram_hourofday('plot_hoursofday_messages.html', metrics, 'frame_hoursofday', 'Message count distribution throughout the day', 'message count')
