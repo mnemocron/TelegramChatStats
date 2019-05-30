@@ -8,6 +8,8 @@ Generate graphs and statistics from your exported Telegram messages.
 
 ## Examples
 
+![images/emojis](examples/bokeh_emojis.png)
+
 ![image/months](examples/bokeh_months.png)
 
 ![image/hours](examples/bokeh_hourofday.png)
@@ -22,6 +24,12 @@ First you need to export your Telegram data to a `result.json` file. You can do 
 
 ```bash
 ./telegram-statistics.py -i result.json -n "name"
+```
+
+Open the file `result_2019-05-30.json` and parse the chat history with `Name Surname` starting from `2018-01-01` up to now and generate the substring plot for the emojis "😘💗💙💓🧡😘💕😚😍🥰"
+
+```bash
+./telegram-statistics.py -i ../result_2019-05-30.json -n "Name Surname" -d 2018-01-01 -w "😘;💗;💙;💓;🧡;😘;💕;😚;😍;🥰"
 ```
 
 ### Import Whatsapp
@@ -54,6 +62,7 @@ HTML Files (Plots):
 - `plot_month_call_time.html` bokeh plot of total seconds on call per month
 - `plot_month_photos.html` bokeh plot of number of photos sent per month 
 - `plot_month_replytime.html` bokeh plot of average monthly replytime (Beta)
+- `plot_month_word_occurrence.html` bokeh plot of combined substring occurences over time
 
 Raw Files (one for each person):
 
