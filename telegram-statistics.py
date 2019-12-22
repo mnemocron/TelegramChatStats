@@ -161,6 +161,7 @@ def main():
 	elif (opts.name is not None):
 		chat_data = select_chat_from_name(raw_data, opts.name)
 
+	wordlist = ''
 	if(opts.words is not None):
 		wordlist = opts.words.lower().split(';')
 	
