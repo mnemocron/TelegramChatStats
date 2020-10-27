@@ -49,7 +49,8 @@ def _parse_chat(chat, date_filter, wordlist):
 	metrics['B']['monthly_word_occurrence'] = {}
 	metrics['A']['monthly_call_duration'] = {}
 	metrics['B']['monthly_call_duration'] = {}
-	metrics['A']['name'] = chat['messages'][0]['from']
+	# person A is the 2nd message (1st can be "joined telegram" which has no "from" key)
+	metrics['A']['name'] = chat['messages'][1]['from'] 
 	metrics['A']['call_hourofday'] = {}
 	metrics['B']['call_hourofday'] = {}
 	previous_message = {}

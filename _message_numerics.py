@@ -18,7 +18,8 @@ def _message_numerics(chat, date_filter):
 	metrics['B']['text'] = u''
 	metrics['A']['media'] = {}
 	metrics['B']['media'] = {}
-	metrics['A']['name'] = chat['messages'][0]['from'] # person A is the first message
+	# person A is the 2nd message (1st can be "joined telegram" which has no "from" key)
+	metrics['A']['name'] = chat['messages'][1]['from'] 
 	metrics['total'] = len(chat['messages'])
 	oldest_date = datetime.strptime(date_filter, '%Y-%m-%d')
 

@@ -151,15 +151,21 @@ def main():
 	print('importing raw data...')
 	raw_data = load_file_to_raw(opts.indir)
 
-	if (opts.id is None and opts.name is None):
-		parser.print_help() 
-		print_available_names(raw_data)
-		exit(0)
-	
-	if (opts.id is not None):
-		chat_data = select_chat_from_id(raw_data, opts.id)
-	elif (opts.name is not None):
-		chat_data = select_chat_from_name(raw_data, opts.name)
+	if('chats' in raw_data):
+		print('input data is full chat export')
+		if (opts.id is None and opts.name is None):
+			print('Error: argument <name> not specified.')
+			print('I do now know which chat to analyze.')
+			print('Available chats are:')
+			print_available_names(raw_data)
+			exit(0)
+		if (opts.id is not None):
+			chat_data = select_chat_from_id(raw_data, opts.id)
+		elif (opts.name is not None):
+			chat_data = select_chat_from_name(raw_data, opts.name)
+	else:
+		print('input data is a single chat export')
+		chat_data = raw_data
 
 	wordlist = ''
 	if(opts.words is not None):
