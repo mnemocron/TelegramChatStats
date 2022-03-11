@@ -57,6 +57,8 @@ def _parse_chat(chat, date_filter, wordlist):
 	oldest_date = datetime.strptime(date_filter, '%Y-%m-%d')
 
 	for message in chat['messages']:
+		if message['type'] == 'unsupported':
+			continue
 		person = 'B'
 		if('from' in message):
 			if metrics['A']['name'] in message['from']:
